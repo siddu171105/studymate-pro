@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 export interface Task {
   id: string;
@@ -62,11 +62,57 @@ const generateStudySessions = (): StudySession[] => {
   return sessions;
 };
 
+// Helper for local storage
+const STORAGE_KEYS = {
+  TASKS: "studymate_tasks",
+  SUBJECTS: "studymate_subjects",
+  SESSIONS: "studymate_sessions",
+  STREAK: "studymate_streak",
+};
+
 export function useStudyData() {
-  const [tasks, setTasks] = useState<Task[]>(DEMO_TASKS);
-  const [subjects] = useState<Subject[]>(DEMO_SUBJECTS);
-  const [sessions] = useState<StudySession[]>(generateStudySessions());
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.TASKS);
+    if (saved) {
+      return JSON.parse(saved).map((t: any) => ({
+        ...t,
+        deadline: new Date(t.deadline),
+        createdAt: new Date(t.createdAt),
+      }));
+    }
+    return DEMO_TASKS;
+  });
+
+  const [subjects, setSubjects] = useState<Subject[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.SUBJECTS);
+    return saved ? JSON.parse(saved) : DEMO_SUBJECTS;
+  });
+
+  const [sessions, setSessions] = useState<StudySession[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.SESSIONS);
+    if (saved) {
+      return JSON.parse(saved).map((s: any) => ({
+        ...s,
+        date: new Date(s.date),
+      }));
+    }
+    return generateStudySessions();
+  });
+
   const [streak] = useState(12);
+
+  // Sync to local storage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
+  }, [tasks]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SUBJECTS, JSON.stringify(subjects));
+  }, [subjects]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(sessions));
+  }, [sessions]);
 
   const completeTask = useCallback((id: string) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status: "completed" as const } : t));
@@ -78,6 +124,18 @@ export function useStudyData() {
 
   const deleteTask = useCallback((id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const addSession = useCallback((minutes: number, subject: string) => {
+    setSessions(prev => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        date: new Date(),
+        minutes,
+        subject,
+      },
+    ]);
   }, []);
 
   const pendingTasks = tasks.filter(t => t.status === "pending");
@@ -93,6 +151,7 @@ export function useStudyData() {
     tasks, subjects, sessions, streak,
     pendingTasks, completedTasks,
     todayMinutes, productivityScore,
-    completeTask, addTask, deleteTask,
+    completeTask, addTask, deleteTask, addSession,
   };
 }
+

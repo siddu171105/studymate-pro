@@ -79,19 +79,26 @@ export default function FocusRing({ totalSeconds, isRunning, remainingSeconds, o
   );
 }
 
-export function useFocusTimer(initialMinutes = 25) {
+export function useFocusTimer(initialMinutes = 25, onComplete?: () => void) {
   const totalSeconds = initialMinutes * 60;
   const [remaining, setRemaining] = useState(totalSeconds);
   const [isRunning, setIsRunning] = useState(false);
 
   useEffect(() => {
-    if (!isRunning || remaining <= 0) return;
+    if (!isRunning || remaining <= 0) {
+      if (remaining === 0 && isRunning) {
+        setIsRunning(false);
+        if (onComplete) onComplete();
+      }
+      return;
+    }
     const interval = setInterval(() => setRemaining(r => r - 1), 1000);
     return () => clearInterval(interval);
-  }, [isRunning, remaining]);
+  }, [isRunning, remaining, onComplete]);
 
   const toggle = useCallback(() => setIsRunning(r => !r), []);
   const reset = useCallback(() => { setIsRunning(false); setRemaining(totalSeconds); }, [totalSeconds]);
 
   return { totalSeconds, remaining, isRunning, toggle, reset };
 }
+

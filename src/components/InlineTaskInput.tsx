@@ -23,12 +23,13 @@ export default function InlineTaskInput({ subjects, onAdd }: InlineTaskInputProp
       priority,
       deadline: new Date(Date.now() + 86400000 * 2),
       estimatedMinutes: minutes,
-      difficulty: "medium",
+      difficulty: minutes > 90 ? "hard" : minutes > 45 ? "medium" : "easy",
       status: "pending",
     });
     setTitle("");
     setOpen(false);
   };
+
 
   if (!open) {
     return (

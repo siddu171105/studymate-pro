@@ -11,10 +11,13 @@ export default function Dashboard() {
   const {
     pendingTasks, completedTasks, subjects, sessions,
     streak, todayMinutes, productivityScore,
-    completeTask, addTask, deleteTask,
+    completeTask, addTask, deleteTask, addSession
   } = useStudyData();
 
-  const timer = useFocusTimer(25);
+  const timer = useFocusTimer(25, () => {
+    addSession(25, "Organic Chemistry"); // Default or last focused
+  });
+
   const hours = Math.floor(todayMinutes / 60);
   const mins = todayMinutes % 60;
 
